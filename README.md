@@ -6,6 +6,7 @@
 <details>
 <summary>Reflection: Commit 1</summary>
 
+
 The ```handle_connection``` method reads and prints the HTTP request headers from a TCP connection.
 
 **1. Wraps the TCPStream in BufReader**
@@ -48,4 +49,9 @@ Request: [
 ]
 ```
 
+</details>
+
+<details>
+    <summary>Reflection: Commit 2</summary>
+    ![Commit 2 screen capture](/assets/images/adpro-modul6_commit2.png) 
 </details>
