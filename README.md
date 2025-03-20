@@ -48,7 +48,6 @@ Request: [
     "Cookie: csrftoken=qnUz3g0Vm17XcQEPWpnPXAZkf20LmLbS",
 ]
 ```
-
 </details>
 
 <details>
@@ -60,5 +59,12 @@ Request: [
     <summary>Reflection: Commit 3</summary>
     ![Commit 3 screen capture](/assets/images/commit3.png) 
 
-    ```handle_connection``` reads the first line of the HTTP request to determine the requested resource. If the request is ```GET / HTTP/1.1```, it responds with the contents of ```hello.html``` and a 200 OK status. Otherwise, it serves ```404.html``` with a 404 NOT FOUND status. I have done some refactoring to reduce code duplication.
+    handle_connection reads the first line of the HTTP request to determine the requested resource. If the request is GET / HTTP/1.1 it responds with the contents of hello.html and a 200 OK status. Otherwise, it serves 404.html with a 404 NOT FOUND status. I have done some refactoring to reduce code duplication.
+</details>
+
+<details>
+    <summary>Reflection: Commit 4</summary>
+
+    When we open 127.0.0.1/sleep, the request likely triggers a delay in the server. Since the server handles connections sequentially (not multi-threaded), it blocks other requests, causing the second browser window (127.0.0.1/) to wait until the first request completes.
+    
 </details>
