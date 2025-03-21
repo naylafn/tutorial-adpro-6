@@ -6,28 +6,23 @@
 <details>
 <summary>Reflection: Commit 1</summary>
 
+The `handle_connection` method reads and prints the HTTP request headers from a TCP connection.
 
-The ```handle_connection``` method reads and prints the HTTP request headers from a TCP connection.
+**1. Wraps the TCPStream in BufReader**  
+`BufReader::new(&stream)`: Creates a buffered reader to efficiently read lines from the connection.
 
-**1. Wraps the TCPStream in BufReader**
+**2. Reads the HTTP request line by line**  
+`.lines()`: Reads the incoming data line by line.  
+`.map(|result| result.unwrap())`: Extracts the actual string from the Result<String, io::Error>, if no errors occur.  
+`.take_while(|line| !line.is_empty())`: Reads lines until it encounters an empty line (`""`).  
 
-```BufReader::new(&stream)```: Creates a buffered reader to efficiently read lines from the connection.
+**3. Stores the request in a `Vec<String>`**  
 
-**2. Reads the HTTP request line by line**
-
-```.lines()```: Reads the incoming data line by line.
-
-```.map(|result| result.unwrap())```: Extracts the actual string from the Result<String, io::Error>, if no errors occur.
-
-```.take_while(|line| !line.is_empty())```: Reads lines until it encounters an empty line ("").
-
-**3. Stores the request in a ```Vec<String>```**
-
-***4. Prints the HTTP request**
+**4. Prints the HTTP request**  
 
 Output:
 
-``` Rust
+```rust
 Request: [
     "GET / HTTP/1.1",
     "Host: 127.0.0.1:7878",
@@ -51,20 +46,30 @@ Request: [
 </details>
 
 <details>
-    <summary>Reflection: Commit 2</summary>
-    ![Commit 2 screen capture](/assets/images/commit2.png) 
+<summary>Reflection: Commit 2</summary>
+
+![Commit 2 screen capture](./assets/image/commit2.png)
+
+First, it creates a `BufReader` to read the request line by line and stores the lines in a slice until it sees an empty line, which is the marker for the end of the HTTP request headers. Once it has read the request, it constructs a response with a `200 OK` status and opens `hello.html` from the filesystem. It then creates the response in the correct HTTP format, including the `Content-Length` header and then the file contents. Finally, it sends the response back to the client using `stream.write_all()`, so the browser can display the `hello.html` page. This ensures that any client requesting the server receives my messages in `hello.html`.
 </details>
 
 <details>
-    <summary>Reflection: Commit 3</summary>
-    ![Commit 3 screen capture](/assets/images/commit3.png) 
+<summary>Reflection: Commit 3</summary>
 
-    handle_connection reads the first line of the HTTP request to determine the requested resource. If the request is GET / HTTP/1.1 it responds with the contents of hello.html and a 200 OK status. Otherwise, it serves 404.html with a 404 NOT FOUND status. I have done some refactoring to reduce code duplication.
+![Commit 3 screen capture](./assets/image/commit3.png)
+
+`handle_connection` reads the first line of the HTTP request to determine the requested resource. If the request is `GET / HTTP/1.1`, it responds with the contents of `hello.html` and a `200 OK` status. Otherwise, it serves `404.html` with a `404 NOT FOUND` status. There are some refactorings done to fix the obvious code duplication. I achieved that by using the `match` expression to efficiently map each request path to the appropriate status code, eliminating redundant conditional checks.
 </details>
 
 <details>
-    <summary>Reflection: Commit 4</summary>
+<summary>Reflection: Commit 4</summary>
 
-    When we open 127.0.0.1/sleep, the request likely triggers a delay in the server. Since the server handles connections sequentially (not multi-threaded), it blocks other requests, causing the second browser window (127.0.0.1/) to wait until the first request completes.
-    
+If the request is for `GET / HTTP/1.1`, it responds with `hello.html` and a `200 OK` status, while an unknown request results in a `404 NOT FOUND` response with `404.html`. If the request is for `GET /sleep HTTP/1.1`, the server will have a 5-second delay before sending `hello.html`. For example, if someone requests `GET /sleep HTTP/1.1`, and then a second later another person tries requesting `GET / HTTP/1.1`, the other person will need to wait 4 seconds to access `hello.html`. Because the server processes requests sequentially (single-threaded), any request that arrives while another is sleeping will have to wait until the first request is completed, making the server slow for multiple users.
 </details>
+
+<details>
+<summary>Reflection: Commit 5</summary>
+
+In the book, we are taught to improve throughput with `ThreadPool`. A thread pool is like a group of threads that are ready to handle tasks, allowing us to process connections concurrently. We could spawn an unlimited number of threads, but that increases the risk of DoS (Denial of Service) attacks, which is why we limit the number of threads in this tutorial. We define the `ThreadPool` as a `struct` that has `workers` and a `sender`. `workers` is a vector, each running in a loop and waiting for tasks that will be delivered by `sender`. We use a channel (`mpsc::Sender<Job>`) for sending tasks from the main thread to `worker` threads. Each `worker` continuously waits for jobs, executes them when available, and logs its activity. If the channel is closed, `workers` detect it, log a shutdown message, and terminate gracefully.
+</details>
+
