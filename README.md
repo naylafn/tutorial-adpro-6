@@ -73,3 +73,8 @@ If the request is for `GET / HTTP/1.1`, it responds with `hello.html` and a `200
 In the book, we are taught to improve throughput with `ThreadPool`. A thread pool is like a group of threads that are ready to handle tasks, allowing us to process connections concurrently. We could spawn an unlimited number of threads, but that increases the risk of DoS (Denial of Service) attacks, which is why we limit the number of threads in this tutorial. We define the `ThreadPool` as a `struct` that has `workers` and a `sender`. `workers` is a vector, each running in a loop and waiting for tasks that will be delivered by `sender`. We use a channel (`mpsc::Sender<Job>`) for sending tasks from the main thread to `worker` threads. Each `worker` continuously waits for jobs, executes them when available, and logs its activity. If the channel is closed, `workers` detect it, log a shutdown message, and terminate gracefully.
 </details>
 
+<details>
+<summary>Reflection: Bonus</summary>
+
+The main difference between new and build in the ThreadPool implementation is error handling. The new method directly asserts that the size is greater than zero, causing a panic if an invalid size is provided. On the other hand, build gracefully handles errors by returning a ```Result<ThreadPool, &'static str>```, allowing the caller to decide how to manage the error instead of forcing a panic. The advantage of using build is that it makes the code more robust and flexible, as it provides an opportunity to handle errors properly rather than crashing the program unexpectedly. This approach improves reliability, especially in scenarios where thread pool creation might fail due to dynamic inputs, ensuring better control over program execution.
+</details>
