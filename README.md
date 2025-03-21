@@ -52,19 +52,27 @@ Request: [
 
 <details>
     <summary>Reflection: Commit 2</summary>
-    ![Commit 2 screen capture](/assets/images/commit2.png) 
+    ![Commit 2 screen capture](/assets/image/commit2.png) 
+
+    First it creates a ```BufReader``` to read the request line by line and stores the lines in a slice until it sees an empty line which is the marker for the end of the HTTP request headers. Once it has read the request, it constructs a response with a 200 OK status, and opens ```hello.html``` from the filesystem. It then creates the response in the correct HTTP format, including the Content-Length header, and then the file contents. Last, it sends the response back to the client utilizing ```stream.write_all()```, so the browser can display the ```hello.html``` page. This ensures that any client requesting the server receives my messages in ```hello.html```.
 </details>
 
 <details>
     <summary>Reflection: Commit 3</summary>
-    ![Commit 3 screen capture](/assets/images/commit3.png) 
+    ![Commit 3 screen capture](/assets/image/commit3.png) 
 
-    handle_connection reads the first line of the HTTP request to determine the requested resource. If the request is GET / HTTP/1.1 it responds with the contents of hello.html and a 200 OK status. Otherwise, it serves 404.html with a 404 NOT FOUND status. I have done some refactoring to reduce code duplication.
+    ```handle_connection``` reads the first line of the HTTP request to determine the requested resource. If the request is GET / HTTP/1.1 it responds with the contents of ```hello.html``` and a 200 OK status. Otherwise, it serves ```404.html``` with a 404 NOT FOUND status. There are some refactoring done to fix the obvious code duplication. I achieve that by using the match expression to efficiently maps each request path to the appropriate status code to eliminate redundant conditional checks.
 </details>
 
 <details>
     <summary>Reflection: Commit 4</summary>
 
-    When we open 127.0.0.1/sleep, the request likely triggers a delay in the server. Since the server handles connections sequentially (not multi-threaded), it blocks other requests, causing the second browser window (127.0.0.1/) to wait until the first request completes.
+    If the request is for "GET / HTTP/1.1", it responds with ```hello.html``` and a 200 OK status, while an unknown request results in a 404 NOT FOUND response with ```404.html```. If the request is for "GET /sleep HTTP/1.1", the server will have a 5-second delay before sending ```hello.html```. For example, if someone is requesting for "GET /sleep HTTP/1.1", and then a second later another person try is requesting for "GET / HTTP/1.1", the other person will need to wait 4 seconds to access ```hello.html```. Because the server processes requests sequentially (single threaded), any request that arrives while another is sleeping will have to wait until the first request is completed, making the server slow for multiple users.
     
+</details>
+
+<details>
+    <summary>Reflection: Commit 5</summary>
+
+    On the book, we are taught to improve throughput with ThreadPool. A thread pool is like a group of threads that are ready to handle a task, so allows us to process connections concurrently. We can choose to spawn unlimited number of threads, but that will raise the chances of getting DoS (denial of service) attacks, thus why we limit the number of threads in this tutorial. We define the ThreadPool as a ```struct``` that have ```workers``` and ```sender```. ```workers```is a vector, each running in a loop and waiting for tasks, that are gonna be delivered by ```sender```. We are using a channel ```mpsc::Sender<Job>``` for sending tasks from the main thread to ```worker``` threads. Each ```worker``` continuously waiting for jobs, executes them when available, and logs its activity. If the channel is closed, ```workers``` detect it, log a shutdown message, and terminate gracefully.
 </details>
